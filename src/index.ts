@@ -7,7 +7,7 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { TodoistApi } from "@doist/todoist-api-typescript";
-import { CREATE_TASK_TOOL } from "./tools.js";
+import { CREATE_TASK_TOOL, GET_TASKS_TOOL } from "./tools.js";
 
 const server = new Server(
   {
@@ -51,8 +51,18 @@ function isCreateTaskArgs(args: unknown): args is {
   );
 }
 
+function isGetTasksArgs(args: unknown): args is {
+  project_id?: string;
+  filter?: string;
+  priority?: number;
+  limit?: number;
+  section_id?: string;
+} {
+  return typeof args === "object" && args !== null;
+}
+
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [CREATE_TASK_TOOL],
+  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL],
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -85,6 +95,66 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }${task.due ? `\nDue: ${task.due.string}` : ""}${
               task.priority ? `\nPriority: ${task.priority}` : ""
             }`,
+          },
+        ],
+        isError: false,
+      };
+    }
+
+    if (name === "todoist_get_tasks") {
+      if (!isGetTasksArgs(args)) {
+        throw new Error("Invalid arguments for todoist_get_tasks");
+      }
+
+      const apiParams: any = {};
+      if (args.project_id) {
+        apiParams.projectId = args.project_id;
+      }
+      if (args.filter) {
+        apiParams.filter = args.filter;
+      }
+
+      const tasks = await todoistClient.getTasks(
+        Object.keys(apiParams).length > 0 ? apiParams : undefined
+      );
+
+      let filteredTasks = tasks;
+
+      if (args.priority) {
+        filteredTasks = filteredTasks.filter(
+          (task) => task.priority === args.priority
+        );
+      }
+
+      if (args.section_id) {
+        filteredTasks = filteredTasks.filter(
+          (task) => task.sectionId === args.section_id
+        );
+      }
+
+      if (args.limit && args.limit > 0) {
+        filteredTasks = filteredTasks.slice(0, args.limit);
+      }
+
+      const taskList = filteredTasks
+        .map(
+          (task) =>
+            `- ${task.content}${
+              task.description ? `\n  Description: ${task.description}` : ""
+            }${task.due ? `\n  Due: ${task.due.string}` : ""}${
+              task.priority ? `\n  Priority: ${task.priority}` : ""
+            }`
+        )
+        .join("\n\n");
+
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              filteredTasks.length > 0
+                ? taskList
+                : "No tasks found matching the criteria",
           },
         ],
         isError: false,

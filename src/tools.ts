@@ -37,3 +37,36 @@ export const CREATE_TASK_TOOL: Tool = {
     required: ["content"],
   },
 };
+
+export const GET_TASKS_TOOL: Tool = {
+  name: "todoist_get_tasks",
+  description: "Get a list of tasks from Todoist with various filters",
+  inputSchema: {
+    type: "object",
+    properties: {
+      project_id: {
+        type: "string",
+        description: "Filter tasks by project ID (optional)",
+      },
+      filter: {
+        type: "string",
+        description:
+          "Natural language filter like 'today', 'tomorrow', 'next week', 'priority 1', 'overdue' (optional)",
+      },
+      priority: {
+        type: "number",
+        description: "Filter by priority level (1-4) (optional)",
+        enum: [1, 2, 3, 4],
+      },
+      limit: {
+        type: "number",
+        description: "Maximum number of tasks to return (optional)",
+        default: 10,
+      },
+      section_id: {
+        type: "string",
+        description: "Filter tasks by section ID (optional)",
+      },
+    },
+  },
+};
