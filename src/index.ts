@@ -22,6 +22,21 @@ import {
   UPDATE_SECTION_TOOL,
   DELETE_SECTION_TOOL
 } from "./tools.js";
+import {
+  isCreateTaskArgs,
+  isGetTasksArgs,
+  isUpdateTaskArgs,
+  isDeleteTaskArgs,
+  isCompleteTaskArgs,
+  isGetProjectsArgs,
+  isCreateProjectArgs,
+  isUpdateProjectArgs,
+  isDeleteProjectArgs,
+  isGetSectionsArgs,
+  isCreateSectionArgs,
+  isUpdateSectionArgs,
+  isDeleteSectionArgs,
+} from "./types.js";
 
 // Server implementation
 
@@ -52,171 +67,6 @@ if (!TODOIST_API_TOKEN) {
 
 // Initialize Todoist client
 const todoistClient = new TodoistApi(TODOIST_API_TOKEN);
-
-// Type guards for arguments
-function isCreateTaskArgs(args: unknown): args is {
-  content: string;
-  description?: string;
-  due_string?: string;
-  priority?: number;
-  project_id?: string;
-  section_id?: string;
-} {
-  return (
-    typeof args === "object" &&
-    args !== null &&
-    "content" in args &&
-    typeof (args as { content: string }).content === "string"
-  );
-}
-
-function isGetTasksArgs(args: unknown): args is {
-  project_id?: string;
-  filter?: string;
-  priority?: number;
-  limit?: number;
-  section_id?: string;
-} {
-  return typeof args === "object" && args !== null;
-}
-
-function isUpdateTaskArgs(args: unknown): args is {
-  task_name: string;
-  content?: string;
-  description?: string;
-  due_string?: string;
-  priority?: number;
-  project_id?: string;
-  section_id?: string;
-} {
-  return (
-    typeof args === "object" &&
-    args !== null &&
-    "task_name" in args &&
-    typeof (args as { task_name: string }).task_name === "string"
-  );
-}
-
-function isDeleteTaskArgs(args: unknown): args is {
-  task_name: string;
-} {
-  return (
-    typeof args === "object" &&
-    args !== null &&
-    "task_name" in args &&
-    typeof (args as { task_name: string }).task_name === "string"
-  );
-}
-
-function isCompleteTaskArgs(args: unknown): args is {
-  task_name: string;
-} {
-  return (
-    typeof args === "object" &&
-    args !== null &&
-    "task_name" in args &&
-    typeof (args as { task_name: string }).task_name === "string"
-  );
-}
-
-function isGetProjectsArgs(args: unknown): args is {
-  limit?: number;
-} {
-  return typeof args === "object" && args !== null;
-}
-
-function isCreateProjectArgs(args: unknown): args is {
-  name: string;
-  color?: string;
-  parent_id?: string;
-} {
-  return (
-    typeof args === "object" &&
-    args !== null &&
-    "name" in args &&
-    typeof (args as { name: string }).name === "string"
-  );
-}
-
-function isUpdateProjectArgs(args: unknown): args is {
-  project_name: string;
-  name?: string;
-  color?: string;
-} {
-  return (
-    typeof args === "object" &&
-    args !== null &&
-    "project_name" in args &&
-    typeof (args as { project_name: string }).project_name === "string"
-  );
-}
-
-function isDeleteProjectArgs(args: unknown): args is {
-  project_name: string;
-} {
-  return (
-    typeof args === "object" &&
-    args !== null &&
-    "project_name" in args &&
-    typeof (args as { project_name: string }).project_name === "string"
-  );
-}
-
-function isGetSectionsArgs(args: unknown): args is {
-  project_name: string;
-  limit?: number;
-} {
-  return (
-    typeof args === "object" &&
-    args !== null &&
-    "project_name" in args &&
-    typeof (args as { project_name: string }).project_name === "string"
-  );
-}
-
-function isCreateSectionArgs(args: unknown): args is {
-  name: string;
-  project_name: string;
-  order?: number;
-} {
-  return (
-    typeof args === "object" &&
-    args !== null &&
-    "name" in args &&
-    "project_name" in args &&
-    typeof (args as { name: string }).name === "string" &&
-    typeof (args as { project_name: string }).project_name === "string"
-  );
-}
-
-function isUpdateSectionArgs(args: unknown): args is {
-  section_name: string;
-  project_name: string;
-  name?: string;
-} {
-  return (
-    typeof args === "object" &&
-    args !== null &&
-    "section_name" in args &&
-    "project_name" in args &&
-    typeof (args as { section_name: string }).section_name === "string" &&
-    typeof (args as { project_name: string }).project_name === "string"
-  );
-}
-
-function isDeleteSectionArgs(args: unknown): args is {
-  section_name: string;
-  project_name: string;
-} {
-  return (
-    typeof args === "object" &&
-    args !== null &&
-    "section_name" in args &&
-    "project_name" in args &&
-    typeof (args as { section_name: string }).section_name === "string" &&
-    typeof (args as { project_name: string }).project_name === "string"
-  );
-}
 
 // Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
