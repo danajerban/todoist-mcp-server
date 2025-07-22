@@ -7,7 +7,7 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { TodoistApi } from "@doist/todoist-api-typescript";
-import { CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL } from "./tools.js";
+import { CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL } from "./tools.js";
 
 const server = new Server(
   {
@@ -78,8 +78,19 @@ function isUpdateTaskArgs(args: unknown): args is {
   );
 }
 
+function isDeleteTaskArgs(args: unknown): args is {
+  task_name: string;
+} {
+  return (
+    typeof args === "object" &&
+    args !== null &&
+    "task_name" in args &&
+    typeof (args as { task_name: string }).task_name === "string"
+  );
+}
+
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL],
+  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL],
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -230,6 +241,41 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 ? `\nNew Priority: ${updatedTask.priority}`
                 : ""
             }`,
+          },
+        ],
+        isError: false,
+      };
+    }
+
+    if (name === "todoist_delete_task") {
+      if (!isDeleteTaskArgs(args)) {
+        throw new Error("Invalid arguments for todoist_delete_task");
+      }
+
+      const tasks = await todoistClient.getTasks();
+      const matchingTask = tasks.find((task) =>
+        task.content.toLowerCase().includes(args.task_name.toLowerCase())
+      );
+
+      if (!matchingTask) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Could not find a task matching "${args.task_name}"`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      await todoistClient.deleteTask(matchingTask.id);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Successfully deleted task: "${matchingTask.content}"`,
           },
         ],
         isError: false,

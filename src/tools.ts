@@ -113,3 +113,18 @@ export const UPDATE_TASK_TOOL: Tool = {
     required: ["task_name"],
   },
 };
+
+export const DELETE_TASK_TOOL: Tool = {
+  name: "todoist_delete_task",
+  description: "Delete a task from Todoist by searching for it by name",
+  inputSchema: {
+    type: "object",
+    properties: {
+      task_name: {
+        type: "string",
+        description: "Name/content of the task to search for and delete",
+      },
+    },
+    required: ["task_name"],
+  },
+};
