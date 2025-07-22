@@ -262,3 +262,26 @@ export const CREATE_SECTION_TOOL: Tool = {
     required: ["name", "project_name"],
   },
 };
+
+export const UPDATE_SECTION_TOOL: Tool = {
+  name: "todoist_update_section",
+  description: "Update an existing section by searching for it by name",
+  inputSchema: {
+    type: "object",
+    properties: {
+      section_name: {
+        type: "string",
+        description: "Name of the section to search for and update",
+      },
+      project_name: {
+        type: "string",
+        description: "Name of the project containing the section",
+      },
+      name: {
+        type: "string",
+        description: "New name for the section (optional)",
+      },
+    },
+    required: ["section_name", "project_name"],
+  },
+};
