@@ -219,3 +219,23 @@ export const DELETE_PROJECT_TOOL: Tool = {
     required: ["project_name"],
   },
 };
+
+export const GET_SECTIONS_TOOL: Tool = {
+  name: "todoist_get_sections",
+  description: "Get sections from a specific project",
+  inputSchema: {
+    type: "object",
+    properties: {
+      project_name: {
+        type: "string",
+        description: "Name of the project to get sections from",
+      },
+      limit: {
+        type: "number",
+        description: "Maximum number of sections to return (optional)",
+        default: 50,
+      },
+    },
+    required: ["project_name"],
+  },
+};

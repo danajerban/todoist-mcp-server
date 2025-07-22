@@ -16,7 +16,8 @@ import {
   GET_PROJECTS_TOOL,
   CREATE_PROJECT_TOOL,
   UPDATE_PROJECT_TOOL,
-  DELETE_PROJECT_TOOL
+  DELETE_PROJECT_TOOL,
+  GET_SECTIONS_TOOL
 } from "./tools.js";
 
 // Server implementation
@@ -158,9 +159,21 @@ function isDeleteProjectArgs(args: unknown): args is {
   );
 }
 
+function isGetSectionsArgs(args: unknown): args is {
+  project_name: string;
+  limit?: number;
+} {
+  return (
+    typeof args === "object" &&
+    args !== null &&
+    "project_name" in args &&
+    typeof (args as { project_name: string }).project_name === "string"
+  );
+}
+
 // Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL, COMPLETE_TASK_TOOL, GET_PROJECTS_TOOL, CREATE_PROJECT_TOOL, UPDATE_PROJECT_TOOL, DELETE_PROJECT_TOOL],
+  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL, COMPLETE_TASK_TOOL, GET_PROJECTS_TOOL, CREATE_PROJECT_TOOL, UPDATE_PROJECT_TOOL, DELETE_PROJECT_TOOL, GET_SECTIONS_TOOL],
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -531,6 +544,61 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           {
             type: "text",
             text: `Successfully deleted project: "${matchingProject.name}"`,
+          },
+        ],
+        isError: false,
+      };
+    }
+
+    if (name === "todoist_get_sections") {
+      if (!isGetSectionsArgs(args)) {
+        throw new Error("Invalid arguments for todoist_get_sections");
+      }
+
+      // First, find the project by name
+      const projects = await todoistClient.getProjects();
+      const matchingProject = projects.find((project: any) =>
+        project.name.toLowerCase().includes(args.project_name.toLowerCase())
+      );
+
+      if (!matchingProject) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Could not find a project matching "${args.project_name}"`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      // Fetch sections from the project
+      const sections = await todoistClient.getSections(matchingProject.id);
+
+      // Apply limit if specified
+      const limitedSections = args.limit
+        ? sections.slice(0, args.limit)
+        : sections;
+
+      // Format sections for display
+      const sectionList = limitedSections
+        .map(
+          (section: any) =>
+            `- **${section.name}** (ID: ${section.id})\n  Project: ${
+              matchingProject.name
+            }${section.order ? `\n  Order: ${section.order}` : ""}`
+        )
+        .join("\n\n");
+
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              limitedSections.length > 0
+                ? `Sections in "${matchingProject.name}":\n\n${sectionList}`
+                : `No sections found in project "${matchingProject.name}"`,
           },
         ],
         isError: false,
