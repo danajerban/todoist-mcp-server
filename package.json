@@ -1,0 +1,48 @@
+{
+  "name": "@danajerban/todoist-mcp-server",
+  "version": "0.1.0",
+  "description": "Complete MCP server for Todoist API integration with full project and section support",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "bin": {
+    "todoist-mcp-server": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && shx chmod +x dist/*.js",
+    "prepare": "npm run build",
+    "watch": "tsc --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danajerban/todoist-mcp-server.git"
+  },
+  "keywords": [
+    "mcp",
+    "todoist",
+    "claude",
+    "ai",
+    "task-management",
+    "project-management",
+    "sections",
+    "productivity"
+  ],
+  "author": "danajerban",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/danajerban/todoist-mcp-server/issues"
+  },
+  "homepage": "https://github.com/danajerban/todoist-mcp-server#readme",
+  "dependencies": {
+    "@doist/todoist-api-typescript": "^3.0.3",
+    "@modelcontextprotocol/sdk": "0.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "shx": "^0.3.4",
+    "typescript": "^5.7.2"
+  }
+}
