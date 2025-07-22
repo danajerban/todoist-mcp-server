@@ -239,3 +239,26 @@ export const GET_SECTIONS_TOOL: Tool = {
     required: ["project_name"],
   },
 };
+
+export const CREATE_SECTION_TOOL: Tool = {
+  name: "todoist_create_section",
+  description: "Create a new section in a project",
+  inputSchema: {
+    type: "object",
+    properties: {
+      name: {
+        type: "string",
+        description: "The name of the section",
+      },
+      project_name: {
+        type: "string",
+        description: "Name of the project to add the section to",
+      },
+      order: {
+        type: "number",
+        description: "Order of the section within the project (optional)",
+      },
+    },
+    required: ["name", "project_name"],
+  },
+};

@@ -17,7 +17,8 @@ import {
   CREATE_PROJECT_TOOL,
   UPDATE_PROJECT_TOOL,
   DELETE_PROJECT_TOOL,
-  GET_SECTIONS_TOOL
+  GET_SECTIONS_TOOL,
+  CREATE_SECTION_TOOL
 } from "./tools.js";
 
 // Server implementation
@@ -171,9 +172,24 @@ function isGetSectionsArgs(args: unknown): args is {
   );
 }
 
+function isCreateSectionArgs(args: unknown): args is {
+  name: string;
+  project_name: string;
+  order?: number;
+} {
+  return (
+    typeof args === "object" &&
+    args !== null &&
+    "name" in args &&
+    "project_name" in args &&
+    typeof (args as { name: string }).name === "string" &&
+    typeof (args as { project_name: string }).project_name === "string"
+  );
+}
+
 // Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL, COMPLETE_TASK_TOOL, GET_PROJECTS_TOOL, CREATE_PROJECT_TOOL, UPDATE_PROJECT_TOOL, DELETE_PROJECT_TOOL, GET_SECTIONS_TOOL],
+  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL, COMPLETE_TASK_TOOL, GET_PROJECTS_TOOL, CREATE_PROJECT_TOOL, UPDATE_PROJECT_TOOL, DELETE_PROJECT_TOOL, GET_SECTIONS_TOOL, CREATE_SECTION_TOOL],
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -599,6 +615,51 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               limitedSections.length > 0
                 ? `Sections in "${matchingProject.name}":\n\n${sectionList}`
                 : `No sections found in project "${matchingProject.name}"`,
+          },
+        ],
+        isError: false,
+      };
+    }
+
+    if (name === "todoist_create_section") {
+      if (!isCreateSectionArgs(args)) {
+        throw new Error("Invalid arguments for todoist_create_section");
+      }
+
+      // First, find the project by name
+      const projects = await todoistClient.getProjects();
+      const matchingProject = projects.find((project: any) =>
+        project.name.toLowerCase().includes(args.project_name.toLowerCase())
+      );
+
+      if (!matchingProject) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Could not find a project matching "${args.project_name}"`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      // Create the section using Todoist API
+      const section = await todoistClient.addSection({
+        name: args.name,
+        projectId: matchingProject.id,
+        order: args.order,
+      });
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Section created:\nName: ${section.name}\nID: ${
+              section.id
+            }\nProject: ${matchingProject.name}${
+              section.order ? `\nOrder: ${section.order}` : ""
+            }`,
           },
         ],
         isError: false,
