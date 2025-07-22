@@ -285,3 +285,22 @@ export const UPDATE_SECTION_TOOL: Tool = {
     required: ["section_name", "project_name"],
   },
 };
+
+export const DELETE_SECTION_TOOL: Tool = {
+  name: "todoist_delete_section",
+  description: "Delete a section by searching for it by name",
+  inputSchema: {
+    type: "object",
+    properties: {
+      section_name: {
+        type: "string",
+        description: "Name of the section to search for and delete",
+      },
+      project_name: {
+        type: "string",
+        description: "Name of the project containing the section",
+      },
+    },
+    required: ["section_name", "project_name"],
+  },
+};

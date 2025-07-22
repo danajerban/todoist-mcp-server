@@ -19,7 +19,8 @@ import {
   DELETE_PROJECT_TOOL,
   GET_SECTIONS_TOOL,
   CREATE_SECTION_TOOL,
-  UPDATE_SECTION_TOOL
+  UPDATE_SECTION_TOOL,
+  DELETE_SECTION_TOOL
 } from "./tools.js";
 
 // Server implementation
@@ -203,9 +204,23 @@ function isUpdateSectionArgs(args: unknown): args is {
   );
 }
 
+function isDeleteSectionArgs(args: unknown): args is {
+  section_name: string;
+  project_name: string;
+} {
+  return (
+    typeof args === "object" &&
+    args !== null &&
+    "section_name" in args &&
+    "project_name" in args &&
+    typeof (args as { section_name: string }).section_name === "string" &&
+    typeof (args as { project_name: string }).project_name === "string"
+  );
+}
+
 // Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL, COMPLETE_TASK_TOOL, GET_PROJECTS_TOOL, CREATE_PROJECT_TOOL, UPDATE_PROJECT_TOOL, DELETE_PROJECT_TOOL, GET_SECTIONS_TOOL, CREATE_SECTION_TOOL, UPDATE_SECTION_TOOL],
+  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL, COMPLETE_TASK_TOOL, GET_PROJECTS_TOOL, CREATE_PROJECT_TOOL, UPDATE_PROJECT_TOOL, DELETE_PROJECT_TOOL, GET_SECTIONS_TOOL, CREATE_SECTION_TOOL, UPDATE_SECTION_TOOL, DELETE_SECTION_TOOL],
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -738,6 +753,61 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           {
             type: "text",
             text: `Section "${matchingSection.name}" updated:\nNew Name: ${updatedSection.name}\nID: ${updatedSection.id}\nProject: ${matchingProject.name}`,
+          },
+        ],
+        isError: false,
+      };
+    }
+
+    if (name === "todoist_delete_section") {
+      if (!isDeleteSectionArgs(args)) {
+        throw new Error("Invalid arguments for todoist_delete_section");
+      }
+
+      // First, find the project by name
+      const projects = await todoistClient.getProjects();
+      const matchingProject = projects.find((project: any) =>
+        project.name.toLowerCase().includes(args.project_name.toLowerCase())
+      );
+
+      if (!matchingProject) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Could not find a project matching "${args.project_name}"`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      // Then, find the section by name within the project
+      const sections = await todoistClient.getSections(matchingProject.id);
+      const matchingSection = sections.find((section: any) =>
+        section.name.toLowerCase().includes(args.section_name.toLowerCase())
+      );
+
+      if (!matchingSection) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Could not find a section matching "${args.section_name}" in project "${matchingProject.name}"`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      // Delete the section using Todoist API
+      await todoistClient.deleteSection(matchingSection.id);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Successfully deleted section: "${matchingSection.name}" from project "${matchingProject.name}"`,
           },
         ],
         isError: false,
