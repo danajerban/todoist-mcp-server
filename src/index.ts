@@ -13,7 +13,8 @@ import {
   UPDATE_TASK_TOOL, 
   DELETE_TASK_TOOL, 
   COMPLETE_TASK_TOOL,
-  GET_PROJECTS_TOOL
+  GET_PROJECTS_TOOL,
+  CREATE_PROJECT_TOOL
 } from "./tools.js";
 
 // Server implementation
@@ -118,9 +119,22 @@ function isGetProjectsArgs(args: unknown): args is {
   return typeof args === "object" && args !== null;
 }
 
+function isCreateProjectArgs(args: unknown): args is {
+  name: string;
+  color?: string;
+  parent_id?: string;
+} {
+  return (
+    typeof args === "object" &&
+    args !== null &&
+    "name" in args &&
+    typeof (args as { name: string }).name === "string"
+  );
+}
+
 // Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL, COMPLETE_TASK_TOOL, GET_PROJECTS_TOOL],
+  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL, COMPLETE_TASK_TOOL, GET_PROJECTS_TOOL, CREATE_PROJECT_TOOL],
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -380,6 +394,31 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               limitedProjects.length > 0
                 ? `Projects:\n\n${projectList}`
                 : "No projects found",
+          },
+        ],
+        isError: false,
+      };
+    }
+
+    if (name === "todoist_create_project") {
+      if (!isCreateProjectArgs(args)) {
+        throw new Error("Invalid arguments for todoist_create_project");
+      }
+
+      // Create the project using Todoist API
+      const project = await todoistClient.addProject({
+        name: args.name,
+        color: args.color,
+        parentId: args.parent_id,
+      });
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Project created:\nName: ${project.name}\nID: ${project.id}${
+              project.color ? `\nColor: ${project.color}` : ""
+            }${project.parentId ? `\nParent: ${project.parentId}` : ""}`,
           },
         ],
         isError: false,

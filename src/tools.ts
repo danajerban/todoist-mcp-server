@@ -158,3 +158,26 @@ export const GET_PROJECTS_TOOL: Tool = {
     },
   },
 };
+
+export const CREATE_PROJECT_TOOL: Tool = {
+  name: "todoist_create_project",
+  description: "Create a new project in Todoist",
+  inputSchema: {
+    type: "object",
+    properties: {
+      name: {
+        type: "string",
+        description: "The name of the project",
+      },
+      color: {
+        type: "string",
+        description: "Project color (optional)",
+      },
+      parent_id: {
+        type: "string",
+        description: "ID of parent project for sub-projects (optional)",
+      },
+    },
+    required: ["name"],
+  },
+};
