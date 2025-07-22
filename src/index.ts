@@ -7,7 +7,7 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { TodoistApi } from "@doist/todoist-api-typescript";
-import { CREATE_TASK_TOOL, GET_TASKS_TOOL } from "./tools.js";
+import { CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL } from "./tools.js";
 
 const server = new Server(
   {
@@ -61,8 +61,25 @@ function isGetTasksArgs(args: unknown): args is {
   return typeof args === "object" && args !== null;
 }
 
+function isUpdateTaskArgs(args: unknown): args is {
+  task_name: string;
+  content?: string;
+  description?: string;
+  due_string?: string;
+  priority?: number;
+  project_id?: string;
+  section_id?: string;
+} {
+  return (
+    typeof args === "object" &&
+    args !== null &&
+    "task_name" in args &&
+    typeof (args as { task_name: string }).task_name === "string"
+  );
+}
+
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL],
+  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL],
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -155,6 +172,64 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               filteredTasks.length > 0
                 ? taskList
                 : "No tasks found matching the criteria",
+          },
+        ],
+        isError: false,
+      };
+    }
+
+    if (name === "todoist_update_task") {
+      if (!isUpdateTaskArgs(args)) {
+        throw new Error("Invalid arguments for todoist_update_task");
+      }
+
+      const tasks = await todoistClient.getTasks();
+      const matchingTask = tasks.find((task) =>
+        task.content.toLowerCase().includes(args.task_name.toLowerCase())
+      );
+
+      if (!matchingTask) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Could not find a task matching "${args.task_name}"`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const updateData: any = {};
+      if (args.content) updateData.content = args.content;
+      if (args.description) updateData.description = args.description;
+      if (args.due_string) updateData.dueString = args.due_string;
+      if (args.priority) updateData.priority = args.priority;
+      if (args.project_id) updateData.projectId = args.project_id;
+      if (args.section_id) updateData.sectionId = args.section_id;
+
+      const updatedTask = await todoistClient.updateTask(
+        matchingTask.id,
+        updateData
+      );
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Task "${matchingTask.content}" updated:\nNew Title: ${
+              updatedTask.content
+            }${
+              updatedTask.description
+                ? `\nNew Description: ${updatedTask.description}`
+                : ""
+            }${
+              updatedTask.due ? `\nNew Due Date: ${updatedTask.due.string}` : ""
+            }${
+              updatedTask.priority
+                ? `\nNew Priority: ${updatedTask.priority}`
+                : ""
+            }`,
           },
         ],
         isError: false,

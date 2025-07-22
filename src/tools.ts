@@ -70,3 +70,46 @@ export const GET_TASKS_TOOL: Tool = {
     },
   },
 };
+
+export const UPDATE_TASK_TOOL: Tool = {
+  name: "todoist_update_task",
+  description:
+    "Update an existing task in Todoist by searching for it by name and then updating it",
+  inputSchema: {
+    type: "object",
+    properties: {
+      task_name: {
+        type: "string",
+        description: "Name/content of the task to search for and update",
+      },
+      content: {
+        type: "string",
+        description: "New content/title for the task (optional)",
+      },
+      description: {
+        type: "string",
+        description: "New description for the task (optional)",
+      },
+      due_string: {
+        type: "string",
+        description:
+          "New due date in natural language like 'tomorrow', 'next Monday' (optional)",
+      },
+      priority: {
+        type: "number",
+        description:
+          "New priority level from 1 (normal) to 4 (urgent) (optional)",
+        enum: [1, 2, 3, 4],
+      },
+      project_id: {
+        type: "string",
+        description: "Move task to a different project (optional)",
+      },
+      section_id: {
+        type: "string",
+        description: "Move task to a different section (optional)",
+      },
+    },
+    required: ["task_name"],
+  },
+};
