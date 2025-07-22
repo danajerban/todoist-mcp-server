@@ -14,7 +14,8 @@ import {
   DELETE_TASK_TOOL, 
   COMPLETE_TASK_TOOL,
   GET_PROJECTS_TOOL,
-  CREATE_PROJECT_TOOL
+  CREATE_PROJECT_TOOL,
+  UPDATE_PROJECT_TOOL
 } from "./tools.js";
 
 // Server implementation
@@ -132,9 +133,22 @@ function isCreateProjectArgs(args: unknown): args is {
   );
 }
 
+function isUpdateProjectArgs(args: unknown): args is {
+  project_name: string;
+  name?: string;
+  color?: string;
+} {
+  return (
+    typeof args === "object" &&
+    args !== null &&
+    "project_name" in args &&
+    typeof (args as { project_name: string }).project_name === "string"
+  );
+}
+
 // Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL, COMPLETE_TASK_TOOL, GET_PROJECTS_TOOL, CREATE_PROJECT_TOOL],
+  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL, COMPLETE_TASK_TOOL, GET_PROJECTS_TOOL, CREATE_PROJECT_TOOL, UPDATE_PROJECT_TOOL],
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -419,6 +433,55 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             text: `Project created:\nName: ${project.name}\nID: ${project.id}${
               project.color ? `\nColor: ${project.color}` : ""
             }${project.parentId ? `\nParent: ${project.parentId}` : ""}`,
+          },
+        ],
+        isError: false,
+      };
+    }
+
+    if (name === "todoist_update_project") {
+      if (!isUpdateProjectArgs(args)) {
+        throw new Error("Invalid arguments for todoist_update_project");
+      }
+
+      // First, search for the project using partial name matching
+      const projects = await todoistClient.getProjects();
+      const matchingProject = projects.find((project: any) =>
+        project.name.toLowerCase().includes(args.project_name.toLowerCase())
+      );
+
+      if (!matchingProject) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Could not find a project matching "${args.project_name}"`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      // Build update data object with only the fields that are provided
+      const updateData: any = {};
+      if (args.name) updateData.name = args.name;
+      if (args.color) updateData.color = args.color;
+
+      // Update the project using Todoist API
+      const updatedProject = await todoistClient.updateProject(
+        matchingProject.id,
+        updateData
+      );
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Project "${matchingProject.name}" updated:\nNew Name: ${
+              updatedProject.name
+            }\nID: ${updatedProject.id}${
+              updatedProject.color ? `\nColor: ${updatedProject.color}` : ""
+            }`,
           },
         ],
         isError: false,

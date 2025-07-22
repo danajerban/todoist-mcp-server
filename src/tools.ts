@@ -181,3 +181,26 @@ export const CREATE_PROJECT_TOOL: Tool = {
     required: ["name"],
   },
 };
+
+export const UPDATE_PROJECT_TOOL: Tool = {
+  name: "todoist_update_project",
+  description: "Update an existing project by searching for it by name",
+  inputSchema: {
+    type: "object",
+    properties: {
+      project_name: {
+        type: "string",
+        description: "Name of the project to search for and update",
+      },
+      name: {
+        type: "string",
+        description: "New name for the project (optional)",
+      },
+      color: {
+        type: "string",
+        description: "New color for the project (optional)",
+      },
+    },
+    required: ["project_name"],
+  },
+};
