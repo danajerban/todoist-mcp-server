@@ -12,7 +12,8 @@ import {
   GET_TASKS_TOOL, 
   UPDATE_TASK_TOOL, 
   DELETE_TASK_TOOL, 
-  COMPLETE_TASK_TOOL 
+  COMPLETE_TASK_TOOL,
+  GET_PROJECTS_TOOL
 } from "./tools.js";
 
 // Server implementation
@@ -111,9 +112,15 @@ function isCompleteTaskArgs(args: unknown): args is {
   );
 }
 
+function isGetProjectsArgs(args: unknown): args is {
+  limit?: number;
+} {
+  return typeof args === "object" && args !== null;
+}
+
 // Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL, COMPLETE_TASK_TOOL],
+  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL, COMPLETE_TASK_TOOL, GET_PROJECTS_TOOL],
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -336,6 +343,43 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           {
             type: "text",
             text: `Successfully completed task: "${matchingTask.content}"`,
+          },
+        ],
+        isError: false,
+      };
+    }
+
+    if (name === "todoist_get_projects") {
+      if (!isGetProjectsArgs(args)) {
+        throw new Error("Invalid arguments for todoist_get_projects");
+      }
+
+      // Fetch projects from Todoist API
+      const projects = await todoistClient.getProjects();
+
+      // Apply limit if specified
+      const limitedProjects = args.limit
+        ? projects.slice(0, args.limit)
+        : projects;
+
+      // Format projects for display
+      const projectList = limitedProjects
+        .map(
+          (project: any) =>
+            `- **${project.name}** (ID: ${project.id})${
+              project.color ? `\n  Color: ${project.color}` : ""
+            }${project.parentId ? `\n  Parent: ${project.parentId}` : ""}`
+        )
+        .join("\n\n");
+
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              limitedProjects.length > 0
+                ? `Projects:\n\n${projectList}`
+                : "No projects found",
           },
         ],
         isError: false,

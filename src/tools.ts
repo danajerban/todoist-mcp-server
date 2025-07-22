@@ -143,3 +143,18 @@ export const COMPLETE_TASK_TOOL: Tool = {
     required: ["task_name"],
   },
 };
+
+export const GET_PROJECTS_TOOL: Tool = {
+  name: "todoist_get_projects",
+  description: "Get a list of all projects from Todoist",
+  inputSchema: {
+    type: "object",
+    properties: {
+      limit: {
+        type: "number",
+        description: "Maximum number of projects to return (optional)",
+        default: 50,
+      },
+    },
+  },
+};
