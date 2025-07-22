@@ -204,3 +204,18 @@ export const UPDATE_PROJECT_TOOL: Tool = {
     required: ["project_name"],
   },
 };
+
+export const DELETE_PROJECT_TOOL: Tool = {
+  name: "todoist_delete_project",
+  description: "Delete a project by searching for it by name",
+  inputSchema: {
+    type: "object",
+    properties: {
+      project_name: {
+        type: "string",
+        description: "Name of the project to search for and delete",
+      },
+    },
+    required: ["project_name"],
+  },
+};
