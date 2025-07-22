@@ -7,7 +7,15 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { TodoistApi } from "@doist/todoist-api-typescript";
-import { CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL } from "./tools.js";
+import { 
+  CREATE_TASK_TOOL, 
+  GET_TASKS_TOOL, 
+  UPDATE_TASK_TOOL, 
+  DELETE_TASK_TOOL, 
+  COMPLETE_TASK_TOOL 
+} from "./tools.js";
+
+// Server implementation
 
 const server = new Server(
   {
@@ -21,6 +29,7 @@ const server = new Server(
   }
 );
 
+// Check for API token
 const TODOIST_API_TOKEN = process.env.TODOIST_API_TOKEN!;
 if (!TODOIST_API_TOKEN) {
   console.error("Error: TODOIST_API_TOKEN environment variable is required");
@@ -33,8 +42,10 @@ if (!TODOIST_API_TOKEN) {
   process.exit(1);
 }
 
+// Initialize Todoist client
 const todoistClient = new TodoistApi(TODOIST_API_TOKEN);
 
+// Type guards for arguments
 function isCreateTaskArgs(args: unknown): args is {
   content: string;
   description?: string;
@@ -89,8 +100,20 @@ function isDeleteTaskArgs(args: unknown): args is {
   );
 }
 
+function isCompleteTaskArgs(args: unknown): args is {
+  task_name: string;
+} {
+  return (
+    typeof args === "object" &&
+    args !== null &&
+    "task_name" in args &&
+    typeof (args as { task_name: string }).task_name === "string"
+  );
+}
+
+// Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL],
+  tools: [CREATE_TASK_TOOL, GET_TASKS_TOOL, UPDATE_TASK_TOOL, DELETE_TASK_TOOL, COMPLETE_TASK_TOOL],
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -276,6 +299,43 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           {
             type: "text",
             text: `Successfully deleted task: "${matchingTask.content}"`,
+          },
+        ],
+        isError: false,
+      };
+    }
+
+    if (name === "todoist_complete_task") {
+      if (!isCompleteTaskArgs(args)) {
+        throw new Error("Invalid arguments for todoist_complete_task");
+      }
+
+      // First, search for the task
+      const tasks = await todoistClient.getTasks();
+      const matchingTask = tasks.find((task) =>
+        task.content.toLowerCase().includes(args.task_name.toLowerCase())
+      );
+
+      if (!matchingTask) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Could not find a task matching "${args.task_name}"`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      // Complete the task
+      await todoistClient.closeTask(matchingTask.id);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Successfully completed task: "${matchingTask.content}"`,
           },
         ],
         isError: false,

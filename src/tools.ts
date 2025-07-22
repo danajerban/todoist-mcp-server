@@ -128,3 +128,18 @@ export const DELETE_TASK_TOOL: Tool = {
     required: ["task_name"],
   },
 };
+
+export const COMPLETE_TASK_TOOL: Tool = {
+  name: "todoist_complete_task",
+  description: "Mark a task as complete by searching for it by name",
+  inputSchema: {
+    type: "object",
+    properties: {
+      task_name: {
+        type: "string",
+        description: "Name/content of the task to search for and complete",
+      },
+    },
+    required: ["task_name"],
+  },
+};
